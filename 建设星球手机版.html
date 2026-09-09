@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>我的成长星球 · 班级积分管理</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+    background: linear-gradient(160deg, #10182b 0%, #1b2a4a 45%, #243b66 100%);
+    min-height: 100vh;
+    color: #eaf1ff;
+  }
+  header {
+    padding: 26px 20px 18px;
+    text-align: center;
+    background: rgba(255,255,255,0.05);
+    border-bottom: 1px solid rgba(255,255,255,0.12);
+  }
+  header h1 { font-size: 26px; letter-spacing: 1px; }
+  header h1 span { color: #ffd76a; }
+  header p { color: #a9b6d0; margin: 4px 0 6px; font-size: 13px; }
+  .controls {
+    display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; align-items: center;
+  }
+  .controls input {
+    padding: 9px 14px; border-radius: 10px; border: 1px solid #3b5a86;
+    background: #20304f; color: #eaf1ff; font-size: 14px; width: 200px; outline: none;
+  }
+  .controls input::placeholder { color: #7d8db0; }
+  .btn {
+    padding: 9px 16px; border: none; border-radius: 10px; cursor: pointer;
+    font-size: 14px; font-weight: 600; transition: transform .1s, filter .15s;
+  }
+  .btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+  .btn:active { transform: translateY(0); }
+  .btn-primary { background: linear-gradient(135deg,#57b1ff,#3d7bff); color: #fff; }
+  .btn-gold { background: linear-gradient(135deg,#ffd76a,#ffb347); color: #4a2e00; }
+  .btn-ghost { background: rgba(255,255,255,0.12); color: #eaf1ff; border: 1px solid rgba(255,255,255,0.2); }
+  .btn-danger { background: rgba(255,99,99,0.18); color: #ffb3b3; border: 1px solid rgba(255,120,120,.3); }
+  .stats { display: flex; gap: 22px; justify-content: center; margin-top: 12px; flex-wrap: wrap; font-size: 13px; color: #a9b6d0; }
+  .stats b { color: #ffd76a; }
+  #whoami { font-size: 12px; color: #7d8db0; margin-top: 8px; }
+
+  #grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 18px; padding: 22px; max-width: 1200px; margin: 0 auto;
+  }
+  .card {
+    background: rgba(255,255,255,0.05); border: 2px solid rgba(255,255,255,0.12);
+    border-radius: 18px; padding: 16px; transition: box-shadow .2s, transform .15s;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .card:hover { transform: translateY(-3px); box-shadow: 0 10px 24px rgba(0,0,0,.35); }
+  .card .planetBox { display: flex; justify-content: center; align-items: center; padding: 6px 0; cursor: pointer; }
+  .planetBox:hover { filter: brightness(1.12); }
+  .card .planetBox svg { width: 150px; height: 150px; }
+  .card .nameRow { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .card .planetName { font-size: 17px; font-weight: 700; }
+  .card .studentName { font-size: 13px; color: #c3cee3; }
+  .badge { font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 20px; color: #fff; white-space: nowrap; }
+  .moneyRow { display: flex; justify-content: space-between; font-size: 13px; }
+  .moneyRow .money { color: #ffd76a; font-weight: 700; }
+  .builtRow { font-size: 12px; color: #c9d4ea; line-height: 1.4; min-height: 16px; }
+  .barWrap { background: rgba(255,255,255,0.1); border-radius: 20px; height: 12px; overflow: hidden; }
+  .bar { height: 100%; border-radius: 20px; transition: width .5s ease; }
+  .actions { display: flex; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
+  .actions .btn { flex: 1; font-size: 13px; padding: 8px 6px; }
+
+  /* modal */
+  #modalBg { display: none; position: fixed; inset: 0; background: rgba(5,10,20,0.7); justify-content: center; align-items: center; z-index: 100; padding: 20px; }
+  #modalBg.show { display: flex; }
+  .modal {
+    background: #1c2a47; border: 1px solid rgba(255,255,255,0.15); border-radius: 18px;
+    padding: 22px; width: 100%; max-width: 460px; max-height: 88vh; overflow: auto;
+    box-shadow: 0 18px 50px rgba(0,0,0,.5); position: relative;
+  }
+  .closeX { position: absolute; top: 12px; right: 14px; width: 30px; height: 30px; border: none; border-radius: 50%; background: rgba(255,255,255,0.1); color: #eaf1ff; font-size: 16px; cursor: pointer; line-height: 30px; }
+  .closeX:hover { background: rgba(255,255,255,0.28); }
+  .modal.large { max-width: 820px; }
+  .modal h3 { font-size: 18px; margin-bottom: 4px; }
+  .modal .m-sub { font-size: 13px; color: #a9b6d0; margin-bottom: 14px; }
+  .optList { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+  .opt { display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 10px 12px; cursor: pointer; transition: background .15s; }
+  .opt:hover { background: rgba(255,255,255,0.13); }
+  .opt .pts { font-weight: 700; }
+  .customRow { display: flex; gap: 8px; margin-top: 4px; }
+  .customRow input { flex: 1; }
+  .historyList { font-size: 13px; color: #c9d4ea; line-height: 1.8; max-height: 220px; overflow: auto; margin-top: 6px; }
+  .historyList .h-row { border-bottom: 1px dashed rgba(255,255,255,0.1); padding: 4px 0; }
+  .historyList .plus { color: #7fe0a0; }
+  .historyList .minus { color: #ff9d9d; }
+  .empty { text-align: center; color: #7d8db0; padding: 50px 20px; font-size: 15px; }
+
+  /* big view */
+  .bigPlanet { display: flex; justify-content: center; margin: 6px 0 10px; }
+  .planetBox svg, .bigPlanet svg { image-rendering: pixelated; }
+  .bigPlanet svg { width: 720px; height: 720px; max-width: 100%; }
+  .state { font-size: 13px; color: #c9d4ea; margin-bottom: 10px; }
+  .state .s-row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px dashed rgba(255,255,255,.08); }
+
+  /* auth wall */
+  #authWall { display: none; position: fixed; inset: 0; z-index: 999; background: linear-gradient(160deg,#10182b,#1b2a4a,#243b66); align-items: center; justify-content: center; padding: 20px; }
+  #authWall.show { display: flex; }
+  .auth-card { background: #1c2a47; border: 1px solid rgba(255,255,255,.15); border-radius: 18px; padding: 26px; width: 100%; max-width: 380px; box-shadow: 0 18px 50px rgba(0,0,0,.5); }
+  .auth-card h2 { text-align: center; margin-bottom: 6px; font-size: 22px; }
+  .auth-card .logo { text-align: center; font-size: 40px; margin-bottom: 6px; }
+  .auth-card .m-sub { text-align: center; }
+  .auth-card input { width: 100%; margin-bottom: 12px; padding: 10px 14px; border-radius: 10px; border: 1px solid #3b5a86; background: #20304f; color: #eaf1ff; font-size: 14px; outline: none; }
+  .auth-card input::placeholder { color: #7d8db0; }
+  .auth-card .btn { width: 100%; margin-top: 4px; }
+  .auth-card .hint { text-align: center; font-size: 12px; color: #7d8db0; margin-top: 10px; }
+  .accList { max-height: 160px; overflow: auto; margin: 10px 0; }
+  .accRow { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; background: rgba(255,255,255,.06); border-radius: 8px; margin-bottom: 6px; font-size: 14px; }
+  .accRow .btn { padding: 4px 10px; font-size: 12px; width: auto; flex: none; }
+
+  /* paint canvas editor */
+  .paintWrap { display:flex; gap:14px; flex-wrap:wrap; align-items:flex-start; }
+  #paintGrid { display:grid; --pc: 20px; grid-template-columns: repeat(16, var(--pc)); gap:0; background:#fff; border:2px solid #3b5a86; image-rendering: pixelated; width:max-content; }
+  #paintGrid .pc { width: var(--pc); height: var(--pc); background:#fff; border:1px solid rgba(0,0,0,0.10); cursor:crosshair; box-sizing:border-box; }
+  .paintSide { min-width:150px; }
+  .paintSizeRow { display:flex; gap:6px; flex-wrap:wrap; margin:6px 0; }
+  .szBtn { padding:5px 9px; border-radius:8px; border:1px solid #3b5a86; background:#20304f; color:#eaf1ff; font-size:12px; cursor:pointer; }
+  .szBtn.on { background:#3d7bff; color:#fff; border-color:#57b1ff; }
+  .palette { display:flex; flex-wrap:wrap; gap:4px; max-width:220px; margin:8px 0; }
+  .palette .swatch { width:22px; height:22px; border:2px solid #3b5a86; border-radius:4px; cursor:pointer; }
+  .palette .swatch.sel { border-color:#ffd76a; box-shadow:0 0 0 2px rgba(255,215,106,.5); }
+  .paintToolbar { display:flex; gap:8px; flex-wrap:wrap; margin:8px 0; }
+  .paintInput { padding:7px 10px; border-radius:8px; border:1px solid #3b5a86; background:#20304f; color:#eaf1ff; font-size:13px; outline:none; width:120px; }
+  .paintTrade { display:flex; gap:8px; flex-wrap:wrap; margin:8px 0; }
+  .paintTrade input { width:86px; }
+
+  footer { text-align: center; color: #6b7a99; font-size: 12px; padding: 20px 20px 40px; }
+
+  /* --- mobile (phone) tweaks --- */
+  @media (max-width: 560px){
+    body { font-size: 14px; }
+    header { padding: 16px 12px 12px; }
+    header h1 { font-size: 21px; }
+    .controls { gap: 8px; }
+    .controls input { width: 100%; max-width: 260px; }
+    .btn { padding: 10px 14px; font-size: 14px; }
+    #grid { padding: 12px; gap: 12px; grid-template-columns: 1fr; }
+    #paintGrid { --pc: 12px !important; }
+    .paintWrap { flex-direction: column; }
+    .modal { padding: 16px; }
+    .bigPlanet svg { width: 100%; height: auto; }
+  }
+</style>
+</head>
+<body>
+<header id="appHeader">
+  <h1>🌍 我的<span>成长星球</span></h1>
+  <p>班级小组星球 · 一组一星球 · 星光点亮的每个星球都在长大</p>
+  <div class="controls">
+    <input id="nameInput" placeholder="输入小组名称…">
+    <button class="btn btn-primary" id="addBtn">＋ 添加小组</button>
+    <button class="btn btn-gold" id="rankBtn">🏆 排行榜</button>
+    <button class="btn btn-ghost" id="exportBtn">📤 导出报表</button>
+    <button class="btn btn-gold" id="loginBtn">🔐 老师登录</button>
+    <button class="btn btn-ghost" id="acctBtn">👥 账号</button>
+    <button class="btn btn-ghost" id="resetBtn">⟳ 清空数据</button>
+  </div>
+  <div class="stats" id="stats"></div>
+  <div id="whoami"></div>
+</header>
+
+<div id="grid"></div>
+<footer>数据保存在本浏览器本地 · 刷新不丢失 · 学生可建设/兑换，老师登录后加/扣分</footer>
+
+<div id="modalBg"><div class="modal" id="modal"></div></div>
+<div id="authWall"></div>
+
+<script>
+(function(){
+  // ---------- constants ----------
+  const STORE_KEY = 'growth-planet-v2';
+  const ACCOUNTS_KEY = 'growth-planet-accounts-v1';
+  const SESS_KEY = 'growth-planet-session';
+  const LEVELS = [
+    { name:'荒芜', th:0,  color:'#9aa0a8' },
+    { name:'萌芽', th:20, color:'#6cbf5e' },
+    { name:'村落', th:40, color:'#4caf50' },
+    { name:'城市', th:60, color:'#2196f3' },
+    { name:'星际文明', th:80, color:'#ffb300' }
+  ];
+  const BUILDINGS = [
+    { name:'森林',   emoji:'🌱', cost:10, growth:5,  desc:'为星球播下第一抹绿' },
+    { name:'房屋',   emoji:'🏠', cost:15, growth:8,  desc:'给居民一个温暖的家' },
+    { name:'学校',   emoji:'🏫', cost:25, growth:12, desc:'让星球充满知识和笑声' },
+    { name:'城市',   emoji:'🏙️', cost:40, growth:20, desc:'灯火通明的繁华都市' },
+    { name:'星际文明', emoji:'🚀', cost:60, growth:30, desc:'冲出星球，征服星辰' }
+  ];
+  const POSITIVE = [
+    { label:'按时交作业', pts:5 },
+    { label:'课堂主动发言', pts:3 },
+    { label:'考试进步', pts:10 },
+    { label:'帮同学 / 做好事', pts:5 },
+    { label:'值日卫生达标', pts:5 },
+    { label:'连续一周无违纪', pts:15 }
+  ];
+  const NEGATIVE = [
+    { label:'迟到', pts:-3 },
+    { label:'作业未交', pts:-5 },
+    { label:'上课吵闹', pts:-5 },
+    { label:'辱骂 / 打架', pts:-10 }
+  ];
+  const SHOP = [
+    { name:'免作业券（一次）', emoji:'🎫', cost:30, desc:'可免交一次作业' },
+    { name:'换座位一天', emoji:'💺', cost:20, desc:'和同桌互换座位体验' },
+    { name:'当一日班长', emoji:'👑', cost:40, desc:'体验当班长的责任' },
+    { name:'选同桌一天', emoji:'🤝', cost:25, desc:'和喜欢的同学坐一起' },
+    { name:'陪老师聊天10分钟', emoji:'☕', cost:15, desc:'和老师聊聊心里话' },
+    { name:'午餐优先选座', emoji:'🍚', cost:15, desc:'午间就餐优先挑座位' }
+  ];
+  const PLANET_NAMES = ['星辰','梦想','希望','光年','琥珀','星光','北辰','黎明','银河','蓝图','朝阳','魔法','雨林','云端','灯塔'];
+  const GRADS = [
+    ['#6b6f76','#9aa0a8'],
+    ['#6cbf5e','#a5d68b'],
+    ['#4caf50','#81c784'],
+    ['#2196f3','#64b5f6'],
+    ['#ff9800','#ffd76a']
+  ];
+
+  let db = load() || null;
+  if (!db){ seed(); }
+
+  // ---------- persistence ----------
+  function load(){ try { return JSON.parse(localStorage.getItem(STORE_KEY)); } catch(e){ return null; } }
+  function save(){ localStorage.setItem(STORE_KEY, JSON.stringify(db)); }
+  function loadAccounts(){ try { return JSON.parse(localStorage.getItem(ACCOUNTS_KEY)); } catch(e){ return null; } }
+  function saveAccounts(a){ localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(a)); }
+
+  // ---------- auth helpers ----------
+  function hashPw(s){
+    let h = 5381;
+    for (let i=0;i<s.length;i++){ h = ((h<<5)+h) ^ s.charCodeAt(i); }
+    return (h>>>0).toString(16);
+  }
+  function currentRole(){ return sessionStorage.getItem(SESS_KEY); }
+  function setSession(r){ sessionStorage.setItem(SESS_KEY, r); }
+  function clearSession(){ sessionStorage.removeItem(SESS_KEY); }
+
+  // ---------- utils ----------
+  function el(id){ return document.getElementById(id); }
+  function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+  function getLevel(p){ let l = LEVELS[0]; for (let i=0;i<LEVELS.length;i++){ if (p >= LEVELS[i].th) l = LEVELS[i]; } return l; }
+  function levelIndex(p){ return LEVELS.indexOf(getLevel(p)); }
+  function randPlanetName(){ return PLANET_NAMES[Math.floor(Math.random()*PLANET_NAMES.length)]; }
+  function esc(str){ return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function qjs(str){ return String(str).replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+  function find(id){ return db.students.find(s=>s.id===id); }
+
+  // ---------- seed ----------
+  function seed(){
+    // 预设 8 个小组星球，归属【1组】—【8组】
+    const groups = [];
+    for (let i = 1; i <= 8; i++){
+      groups.push({
+        id: uid(),
+        name: '【' + i + '组】',
+        planetName: PLANET_NAMES[(i - 1) % PLANET_NAMES.length] + '星',
+        starlight: 0,
+        prosperity: 0,
+        createdAt: Date.now(),
+        built: [],
+        customs: [],
+        history: [{ t: Date.now(), text: '开学领养星球', delta: 0 }]
+      });
+    }
+    db = { students: groups, customPositive: [], customNegative: [] };
+    save();
+  }
+
+  // ---------- SVG: building-driven planet engine ----------
+  // Spreads feature positions evenly on the planet disk (golden angle).
+  function buildAnchors(count, cx, cy, R){
+    const pts = [];
+    for (let i=0;i<count;i++){
+      const angle = (i * 137.508) * Math.PI / 180;
+      const r = R*0.26 + ((i % 5) * R*0.12);
+      pts.push([cx + r*Math.cos(angle), cy + r*Math.sin(angle)]);
+    }
+    return pts;
+  }
+
+  // ---------- 512-px fine pixel planet engine ----------
+  const BEMOJI = { '森林':'🌲', '房屋':'🏠', '学校':'🏫', '城市':'🏙️', '星际文明':'🚀' };
+  function P(x, y, w, h, c){ return '<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" fill="'+c+'"/>'; }
+  function drawTree(x, y, sc, detail){
+    const u = sc;
+    let r = P(x-2*u, y-4*u, 4*u, 4*u, '#7a5230')
+          + P(x-2*u, y-8*u, 4*u, 2*u, '#2e7d32')
+          + P(x-3*u, y-10*u, 6*u, 2*u, '#3f8f3f')
+          + P(x-4*u, y-12*u, 8*u, 2*u, '#2e7d32')
+          + P(x-3*u, y-14*u, 6*u, 2*u, '#3f8f3f')
+          + P(x-2*u, y-16*u, 4*u, 2*u, '#56b06a')
+          + P(x-1*u, y-17*u, 2*u, u, '#7fd08f');
+    if (detail) r += P(x-2*u, y-13*u, 2*u, u, '#8fe0a0') + P(x+u, y-12*u, u, u, '#2a7a2e');
+    return r;
+  }
+  function drawHouse(x, y, sc, detail){
+    const u = sc;
+    let r = P(x-6*u, y-9*u, 12*u, 4*u, '#8f4e1a')
+          + P(x-7*u, y-6*u, 14*u, 2*u, '#a45a1c')
+          + P(x-7*u, y-4*u, 14*u, 4*u, '#c8a06a')
+          + P(x-6*u, y-4*u, 2*u, 4*u, '#d8b478')
+          + P(x+4*u, y-4*u, 2*u, 4*u, '#a9824f')
+          + P(x-2*u, y-3*u, 4*u, 3*u, '#7a5230');
+    if (detail) r += P(x-5*u, y-2*u, 2*u, 2*u, '#8fd3ff') + P(x+3*u, y-2*u, 2*u, 2*u, '#8fd3ff') + P(x-8*u, y-8*u, 2*u, 2*u, '#5a3a1a');
+    return r;
+  }
+  function drawSchool(x, y, sc, detail){
+    const u = sc;
+    let r = P(x-8*u, y-10*u, 16*u, 2*u, '#ffb84a')
+          + P(x-7*u, y-8*u, 14*u, 8*u, '#ffe0b3')
+          + P(x-7*u, y-8*u, 2*u, 8*u, '#fff0d6')
+          + P(x+5*u, y-8*u, 2*u, 8*u, '#e0b880')
+          + P(x-2*u, y-4*u, 3*u, 4*u, '#8a6d3b')
+          + P(x-6*u, y-6*u, 2*u, 2*u, '#5a89b0')
+          + P(x+4*u, y-6*u, 2*u, 2*u, '#5a89b0');
+    if (detail) r += P(x-1*u, y-14*u, u, 4*u, '#8a6d3b') + P(x-u, y-16*u, 2*u, 2*u, '#e04747');
+    return r;
+  }
+  function drawTower(x, y, sc, detail){
+    const u = sc;
+    let r = P(x-3*u, y-15*u, 6*u, 15*u, '#8aa0be')
+          + P(x-3*u, y-15*u, u, 15*u, '#a7bbd3')
+          + P(x+2*u, y-15*u, u, 15*u, '#6b7f9d')
+          + P(x-1*u, y-19*u, 2*u, 4*u, '#6b7f9d');
+    if (detail){ for (let row=0;row<5;row++){ for (let col=0;col<2;col++){ const wx=x-2*u+col*3*u, wy=y-13*u+row*3*u; r += P(wx, wy, u, u, ((row+col)%2 ? '#ffd763' : '#eaf1ff')); } } }
+    return r;
+  }
+  function drawRocket(x, y, sc, detail){
+    const u = sc;
+    let r = P(x-2*u, y-6*u, 4*u, 9*u, '#e04747')
+          + P(x-2*u, y-6*u, u, 9*u, '#f06a6a')
+          + P(x+u, y-6*u, u, 9*u, '#b23a3a')
+          + P(x-2*u, y-10*u, 4*u, 4*u, '#ffd763')
+          + P(x-1*u, y-8*u, 2*u, 2*u, '#90caf9')
+          + P(x-3*u, y+3*u, 2*u, 3*u, '#ff9800')
+          + P(x+1*u, y+3*u, 2*u, 3*u, '#ff9800');
+    if (detail) r += '<rect x="'+(x-2*u)+'" y="'+(y+4*u)+'" width="'+(4*u)+'" height="'+(4*u)+'" fill="rgba(255,120,60,0.45)"><animate attributeName="opacity" values="0.15;0.9;0.15" dur="1.5s" repeatCount="indefinite"/></rect>';
+    return r;
+  }
+  function drawBuilding(type, x, y, sc, detail){
+    switch (type){
+      case '森林': return drawTree(x, y, sc, detail);
+      case '房屋': return drawHouse(x, y, sc, detail);
+      case '学校': return drawSchool(x, y, sc, detail);
+      case '城市': return drawTower(x, y, sc, detail);
+      case '星际文明': return drawRocket(x, y, sc, detail);
+      default: return '';
+    }
+  }
+  // 自定义绘画建筑：把用户画的像素网格居中绘制在星球锚点处
+  function drawCustomArt(custom, x, y, cu){
+    let r = '';
+    const col0 = x - (custom.cols * cu) / 2;
+    const row0 = y - (custom.rows * cu) / 2;
+    for (let row = 0; row < custom.rows; row++){
+      for (let col = 0; col < custom.cols; col++){
+        const c = custom.grid[row][col];
+        if (c) r += P(col0 + col*cu, row0 + row*cu, cu, cu, c);
+      }
+    }
+    return r;
+  }
+  function groundFor(built, prosperity, cx, cy, R){
+    const hasNature = built.includes('森林');
+    const hasCity = built.includes('城市') || built.includes('星际文明');
+    const c = Math.max(2, Math.round(R/16));
+    let g = P(cx-3*c, cy-2*c, 6*c, 4*c, 'rgba(130,190,160,0.35)');
+    if (hasNature){ g += P(cx-3*c, cy-1*c, 6*c, 2*c, 'rgba(110,195,105,0.5)') + P(cx-c, cy-3*c, 4*c, 2*c, 'rgba(90,180,90,0.55)') + P(cx-2*c, cy, 3*c, c, 'rgba(70,160,70,0.5)'); }
+    if (hasCity){ g += P(cx-3*c, cy-1*c, 6*c, 2*c, 'rgba(130,195,220,0.45)') + P(cx+2*c, cy-2*c, 2*c, c, 'rgba(200,220,240,0.5)'); }
+    if (built.length === 0 && prosperity <= 0){ g = P(cx-3*c, cy-2*c, c, c, 'rgba(0,0,0,0.24)') + P(cx+2*c, cy-c, c, c, 'rgba(0,0,0,0.2)') + P(cx-2*c, cy+c, c, c, 'rgba(0,0,0,0.18)'); }
+    return g;
+  }
+  function pixelSatellite(x, y, u, tone){
+    let r = P(x-3*u, y-1*u, 2*u, 2*u, '#3f7fd0')
+          + P(x+u, y-1*u, 2*u, 2*u, '#3f7fd0')
+          + P(x-2*u, y-1*u, 4*u, 2*u, '#b0bec5')
+          + P(x-2*u, y-1*u, u, 2*u, '#cfd8dc')
+          + P(x-2*u, y-2*u, u, u, '#90a4ae');
+    if (tone) r += P(x-u, y-3*u, 2*u, u, '#ffd763');
+    return r;
+  }
+  function pixelShip(x, y, u){
+    return P(x-4*u, y-2*u, 8*u, 4*u, '#cfd8dc')
+         + P(x-4*u, y-2*u, 2*u, 4*u, '#e3e9ee')
+         + P(x+2*u, y-2*u, 2*u, 4*u, '#9aa4ad')
+         + P(x+4*u, y-1*u, 2*u, 2*u, '#90a4ae')
+         + P(x-2*u, y-1*u, 2*u, 2*u, '#90caf9')
+         + P(x-6*u, y-1*u, 2*u, 2*u, '#ff9800');
+  }
+  function fleetLayer(built, cx, cy, R, animate){
+    const count = built.filter(t => t === '星际文明').length || 0;
+    if (count === 0) return '';
+    const u = Math.max(1.5, R/30);
+    const r1 = R*1.04, r2 = R*1.26, ry1 = r1*0.42, ry2 = r2*0.42;
+    const sats = Math.max(2, Math.min(4, 1 + count));
+    const ships = Math.max(2, Math.min(3, 1 + count));
+    function ringG(r, ry, items, dur){
+      let inner = '';
+      for (let i=0;i<items.length;i++){
+        const ang = (i/items.length)*Math.PI*2;
+        inner += items[i](cx + r*Math.cos(ang), cy + ry*Math.sin(ang), u);
+      }
+      if (!animate) return '<g>'+inner+'</g>';
+      return '<g><animateTransform attributeName="transform" type="rotate" from="0 '+cx+' '+cy+'" to="360 '+cx+' '+cy+'" dur="'+dur+'" repeatCount="indefinite"/>'+inner+'</g>';
+    }
+    const satItems = []; for (let i=0;i<sats;i++) satItems.push((x,y,uu)=>pixelSatellite(x,y,uu, i%2));
+    const shipItems = []; for (let i=0;i<ships;i++) shipItems.push((x,y,uu)=>pixelShip(x,y,uu));
+    return '<g transform="rotate(-18 '+cx+' '+cy+')">'
+      + '<ellipse cx="'+cx+'" cy="'+cy+'" rx="'+r1+'" ry="'+ry1+'" fill="none" stroke="rgba(190,205,230,0.5)" stroke-width="3" stroke-dasharray="5 7"/>'
+      + ringG(r1, ry1, satItems, '11s')
+      + '<ellipse cx="'+cx+'" cy="'+cy+'" rx="'+r2+'" ry="'+ry2+'" fill="none" stroke="rgba(210,170,120,0.5)" stroke-width="3" stroke-dasharray="5 8"/>'
+      + ringG(r2, ry2, shipItems, '17s')
+      + '</g>';
+  }
+  function planetThumb(s){
+    const li = levelIndex(s.prosperity);
+    const g = GRADS[li];
+    const built = (s.built || []);
+    const customs = s.customs || [];
+    const cx=256, cy=256, R=200, sc=3.5;
+    const nBuilt = Math.min(built.length, 8);
+    const total = nBuilt + customs.length;
+    const anchors = buildAnchors(total, cx, cy, R);
+    let features = '';
+    for (let i=0;i<nBuilt;i++){ if(anchors[i]) features += drawBuilding(built[i], anchors[i][0], anchors[i][1], sc, true); }
+    for (let k=0;k<customs.length;k++){ const a = anchors[nBuilt + k]; if (a) features += drawCustomArt(customs[k], a[0], a[1], sc); }
+    const ring = fleetLayer(built, cx, cy, R, false);
+    return '<svg shape-rendering="crispEdges" viewBox="0 0 512 512">'
+      + '<defs><radialGradient id="pg'+li+'" cx="38%" cy="32%" r="80%"><stop offset="0%" stop-color="'+g[1]+'"/><stop offset="100%" stop-color="'+g[0]+'"/></radialGradient></defs>'
+      + '<circle cx="'+cx+'" cy="'+cy+'" r="'+R+'" fill="url(#pg'+li+')"/>'
+      + groundFor(built, s.prosperity, cx, cy, R) + features + ring
+      + '<circle cx="'+cx+'" cy="'+cy+'" r="'+R+'" fill="none" stroke="rgba(255,255,255,0.16)" stroke-width="10"/>'
+      + '</svg>';
+  }
+  function planetSVG(s){
+    const li = levelIndex(s.prosperity);
+    const g = GRADS[li];
+    const built = (s.built || []);
+    const customs = s.customs || [];
+    const cx=256, cy=256, R=200, sc=3.5;
+    const total = built.length + customs.length;
+    const anchors = buildAnchors(total, cx, cy, R);
+    let features = '';
+    for (let i=0;i<built.length;i++){ if(!anchors[i]) break; features += drawBuilding(built[i], anchors[i][0], anchors[i][1], sc, true); }
+    for (let k=0;k<customs.length;k++){ const a = anchors[built.length + k]; if (a) features += drawCustomArt(customs[k], a[0], a[1], sc); }
+    const ring = fleetLayer(built, cx, cy, R, true);
+    let pulse = '';
+    if (built.includes('城市')){ pulse = '<rect x="'+(cx+46)+'" y="'+(cy-72)+'" width="7" height="7" fill="#ffd763"><animate attributeName="opacity" values="0.2;1;0.2" dur="3s" repeatCount="indefinite"/></rect>' + '<rect x="'+(cx-96)+'" y="'+(cy+66)+'" width="7" height="7" fill="#ffd763"><animate attributeName="opacity" values="1;0.2;1" dur="3.4s" repeatCount="indefinite"/></rect>'; }
+    let stars = '';
+    for (let i=0;i<5;i++){ const px=cx-168+i*72, py=cy-160-(i%2)*24; stars += '<rect x="'+px+'" y="'+py+'" width="4" height="4" fill="#fff"><animate attributeName="opacity" values="0.2;1;0.2" dur="'+(2 + i*0.4)+'s" begin="'+(i*0.3)+'s" repeatCount="indefinite"/></rect>'; }
+    const clouds = '<g><animateTransform attributeName="transform" type="translate" values="0 0; 44 0; 0 0" dur="13s" repeatCount="indefinite"/>'
+      + '<rect x="'+(cx-64)+'" y="'+(cy-92)+'" width="42" height="14" fill="rgba(255,255,255,0.6)"/>'
+      + '<rect x="'+(cx-46)+'" y="'+(cy-100)+'" width="28" height="14" fill="rgba(255,255,255,0.6)"/>'
+      + '<rect x="'+(cx-20)+'" y="'+(cy-86)+'" width="30" height="14" fill="rgba(255,255,255,0.6)"/>'
+      + '</g>';
+    return '<svg shape-rendering="crispEdges" viewBox="0 0 512 512">'
+      + '<defs><radialGradient id="pg'+li+'" cx="38%" cy="32%" r="80%"><stop offset="0%" stop-color="'+g[1]+'"/><stop offset="100%" stop-color="'+g[0]+'"/></radialGradient></defs>'
+      + stars
+      + '<circle cx="'+cx+'" cy="'+cy+'" r="'+R+'" fill="url(#pg'+li+')"/>'
+      + groundFor(built, s.prosperity, cx, cy, R) + features + pulse + clouds + ring
+      + '</svg>';
+  }
+  function builtTags(s){
+    const count = {};
+    (s.built || []).forEach(t => count[t] = (count[t]||0) + 1);
+    const parts = [];
+    BUILDINGS.forEach(b => { if (count[b.name]) parts.push(BEMOJI[b.name] + '×' + count[b.name]); });
+    (s.customs || []).forEach(c => parts.push('🎨 ' + c.name));
+    return parts.length ? parts.join('  ') : '🌑 荒芜';
+  }
+
+  // ---------- render ----------
+  function render(){
+    db.students.forEach(s => { if (!Array.isArray(s.built)){ const li = levelIndex(s.prosperity); const b = []; if (li>=1) b.push('森林'); if (li>=2){ b.push('房屋','房屋'); } if (li>=3){ b.push('学校','城市'); } if (li>=4){ b.push('星际文明'); } s.built = b; } if (!Array.isArray(s.customs)) s.customs = []; });
+    if (!Array.isArray(db.customPositive)) db.customPositive = [];
+    if (!Array.isArray(db.customNegative)) db.customNegative = [];
+    const total = db.students.length;
+    const totalStar = db.students.reduce((s,x)=>s+x.starlight,0);
+    const high = db.students.reduce((a,b)=>a.prosperity>b.prosperity?a:b, db.students[0]||{prosperity:0,name:'—'});
+    el('stats').innerHTML = '小组 <b>'+total+'</b> 组 ｜ 星光总额 <b>'+totalStar+'</b> ｜ 繁荣榜最高 <b>'+(high.name)+'</b>';
+
+    const grid = el('grid');
+    if (db.students.length === 0){
+      grid.innerHTML = '<div class="empty">还没有小组星球，先在上方添加一个小组吧 🌌</div>';
+      return;
+    }
+    grid.innerHTML = db.students.map(s => {
+      const lvl = getLevel(s.prosperity);
+      const li = levelIndex(s.prosperity);
+      const pct = Math.min(100, Math.round((s.prosperity/100)*100));
+      return '<div class="card" style="border-color:'+lvl.color+'">'
+        + '<div class="planetBox" onclick="openView(\''+s.id+'\')" title="点击查看大图">'+planetThumb(s)+'</div>'
+        + '<div class="builtRow">'+esc(builtTags(s))+'</div>'
+        + '<div class="nameRow">'
+        +   '<div><div class="planetName">'+esc(s.planetName)+'</div><div class="studentName">'+esc(s.name)+'</div></div>'
+        +   '<div class="badge" style="background:'+lvl.color+'">'+lvl.name+'</div>'
+        + '</div>'
+        + '<div class="moneyRow"><span>星光能量</span><span class="money">✦ '+s.starlight+'</span></div>'
+        + '<div class="barWrap"><div class="bar" style="width:'+pct+'%;background:'+lvl.color+'"></div></div>'
+        + '<div class="moneyRow"><span>繁荣度 '+pct+'%</span><span style="color:#a9b6d0">Lv.'+(li+1)+'</span></div>'
+        + '<div class="actions">'
+        +   '<button class="btn btn-primary" onclick="openAdd(\''+s.id+'\')">＋加分</button>'
+        +   '<button class="btn btn-ghost" onclick="openSub(\''+s.id+'\')">－扣分</button>'
+        +   '<button class="btn btn-gold" onclick="openBuild(\''+s.id+'\')">⚒️建设</button>'
+        + '</div>'
+        + '<div class="moneyRow" style="font-size:12px"><span></span>'
+        +   '<button class="btn btn-gold" style="padding:4px 10px;font-size:12px" onclick="openShop(\''+s.id+'\')">🏪 星光商店</button>'
+        +   '<button class="btn btn-ghost" style="padding:4px 10px;font-size:12px" onclick="openHistory(\''+s.id+'\')">📜 历史</button>'
+        + '</div>'
+        + '</div>';
+    }).join('');
+  }
+
+  // ---------- modal ----------
+  const bg = el('modalBg');
+  const modal = el('modal');
+  function show(html){ modal.innerHTML = '<button class="closeX" onclick="hide()">✕</button>' + html; modal.classList.toggle('large', html.indexOf('bigPlanet') !== -1 || html.indexOf('paintDraw') !== -1); bg.classList.add('show'); }
+  function hide(){ bg.classList.remove('show'); modal.classList.remove('large'); }
+  bg.addEventListener('click', e => { if (e.target === bg) hide(); });
+  window.hide = hide;
+
+  // ---------- planet ops ----------
+  window.openView = function(id){
+    const s = find(id);
+    const lvl = getLevel(s.prosperity);
+    const pct = Math.min(100, Math.round(s.prosperity/100*100));
+    show('<h3>🔭 '+esc(s.planetName)+'</h3>'
+      + '<p class="m-sub">'+esc(s.name)+' 的星球 ｜ 等级 <b style="color:'+lvl.color+'">'+lvl.name+'</b></p>'
+      + '<div class="bigPlanet">'+planetSVG(s)+'</div>'
+      + '<div class="state">'
+      +   '<div class="s-row"><span>星光能量</span><b style="color:#ffd76a">✦ '+s.starlight+'</b></div>'
+      +   '<div class="s-row"><span>繁荣度</span><b>'+pct+'%</b></div>'
+      +   '<div class="s-row"><span>当前等级</span><b style="color:'+lvl.color+'">'+lvl.name+'</b></div>'
+      +   '<div class="s-row"><span>积分 / 建设记录</span><b>'+s.history.length+' 条</b></div>'
+      + '</div>'
+      + '<div class="actions">'
+      +   '<button class="btn btn-ghost" onclick="openRename(\''+s.id+'\')">✏️ 重命名</button>'
+      +   '<button class="btn btn-danger" onclick="deleteStudent(\''+s.id+'\')">🗑️ 删除星球</button>'
+      + '</div>'
+      + '<div class="actions">'
+      +   '<button class="btn btn-gold" onclick="openShop(\''+s.id+'\')">🏪 商店</button>'
+      +   '<button class="btn btn-ghost" onclick="openHistory(\''+s.id+'\')">📜 历史</button>'
+      +   '<button class="btn btn-primary" onclick="openAdd(\''+s.id+'\')">＋加分</button>'
+      +   '<button class="btn btn-ghost" onclick="openSub(\''+s.id+'\')">－扣分</button>'
+      + '</div>');
+  };
+  window.openRename = function(id){
+    if (!requireTeacher()) return;
+    const s = find(id);
+    show('<h3>✏️ 重命名星球</h3>'
+      + '<p class="m-sub">当前名称：'+esc(s.planetName)+'</p>'
+      + '<div class="customRow"><input id="rn_val" value="'+esc(s.planetName)+'"><button class="btn btn-primary" onclick="doRename(\''+s.id+'\')">保存</button></div>');
+  };
+  window.doRename = function(id){
+    const s = find(id);
+    const v = el('rn_val').value.trim();
+    if (!v){ alert('名称不能为空'); return; }
+    s.planetName = v;
+    s.history.unshift({ t: Date.now(), text: '星球更名为「'+v+'」', delta: 0 });
+    save(); render(); openView(id);
+  };
+  window.deleteStudent = function(id){
+    if (!requireTeacher()) return;
+    const s = find(id);
+    if (!confirm('确定删除「'+s.planetName+'」('+s.name+')及其全部记录吗？此操作不可恢复。')) return;
+    db.students = db.students.filter(x => x.id !== id);
+    save(); render(); hide();
+  };
+
+  // ---------- scoring ----------
+  // 加分/扣分模板（内置 + 自定义常用项）
+  function scoreOptions(id, kind){
+    const base = kind === 'pos' ? POSITIVE : NEGATIVE;
+    const cust = kind === 'pos' ? (db.customPositive||[]) : (db.customNegative||[]);
+    const color = kind === 'pos' ? 'color:#7fe0a0' : 'color:#ff9d9d';
+    let o = '';
+    base.forEach(x => { o += '<div class="opt" onclick="applyPt(\''+id+'\','+x.pts+',\''+qjs(x.label)+'\')"><span>'+esc(x.label)+'</span><span class="pts" style="'+color+'">'+(x.pts>0?'+':'')+x.pts+'</span></div>'; });
+    cust.forEach(x => { o += '<div class="opt" onclick="applyPt(\''+id+'\','+x.pts+',\''+qjs(x.label)+'\')" style="border-style:dashed"><span>'+esc(x.label)+'</span><span class="pts" style="'+color+'">'+(x.pts>0?'+':'')+x.pts+'</span><button class="btn btn-danger" style="padding:2px 8px;font-size:11px;flex:none;width:auto" onclick="event.stopPropagation();delCustom(\''+kind+'\',\''+qjs(x.label)+'\',\''+id+'\')">✕</button></div>'; });
+    return o;
+  }
+  window.delCustom = function(kind, label, id){
+    if (kind === 'pos'){ db.customPositive = (db.customPositive||[]).filter(x => x.label !== label); }
+    else { db.customNegative = (db.customNegative||[]).filter(x => x.label !== label); }
+    save();
+    if (kind === 'pos') window.openAdd(id); else window.openSub(id);
+  };
+  window.openAdd = function(id){
+    if (!requireTeacher()) return;
+    const s = find(id);
+    show('<h3>＋ 为 '+esc(s.name)+' 加分</h3><p class="m-sub">选择原因，或自定义项目名称与分值</p>'
+      + '<div class="optList">'+scoreOptions(id,'pos')+'</div>'
+      + '<div class="customRow"><input id="customLabel" placeholder="项目名称"><input id="customVal" type="number" placeholder="分值"><button class="btn btn-primary" onclick="customPt(\''+id+'\',+1)">应用</button></div>'
+      + '<label style="font-size:12px;color:#a9b6d0;display:flex;align-items:center;gap:6px;margin-top:6px"><input id="customSave" type="checkbox"> 保存为常用项</label>');
+  };
+  window.openSub = function(id){
+    if (!requireTeacher()) return;
+    const s = find(id);
+    show('<h3>－ 为 '+esc(s.name)+' 扣分</h3><p class="m-sub">选择原因，或自定义项目名称与分值</p>'
+      + '<div class="optList">'+scoreOptions(id,'neg')+'</div>'
+      + '<div class="customRow"><input id="customLabel" placeholder="项目名称"><input id="customVal" type="number" placeholder="分值"><button class="btn btn-ghost" onclick="customPt(\''+id+'\',-1)">应用</button></div>'
+      + '<label style="font-size:12px;color:#a9b6d0;display:flex;align-items:center;gap:6px;margin-top:6px"><input id="customSave" type="checkbox"> 保存为常用项</label>');
+  };
+  window.customPt = function(id, sign){
+    const s = find(id);
+    const v = parseFloat(el('customVal').value);
+    const rawLabel = el('customLabel') ? el('customLabel').value.trim() : '';
+    const label = rawLabel || (sign > 0 ? '自定义加分' : '自定义扣分');
+    if (!v || !isFinite(v)){ alert('请输入分值'); return; }
+    const delta = v * sign;
+    s.starlight += delta;
+    s.history.unshift({ t: Date.now(), text: (delta>0?'+':'')+delta + ' ' + label, delta: delta });
+    const saveBox = el('customSave');
+    if (saveBox && saveBox.checked){
+      if (!Array.isArray(db.customPositive)) db.customPositive = [];
+      if (!Array.isArray(db.customNegative)) db.customNegative = [];
+      const tgt = (sign > 0) ? db.customPositive : db.customNegative;
+      if (!tgt.some(x => x.label === label && x.pts === delta)) tgt.push({ label: label, pts: delta });
+    }
+    save(); render(); hide();
+  };
+  window.applyPt = function(id, delta, label){
+    const s = find(id);
+    s.starlight += delta;
+    s.history.unshift({ t: Date.now(), text: (delta>0?'+':'')+delta + ' ' + label, delta: delta });
+    save(); render(); hide();
+  };
+  window.openBuild = function(id){
+    const s = find(id);
+    let opts = BUILDINGS.map(b =>
+      '<div class="opt" onclick="build(\''+id+'\',\''+b.name+'\')">'
+      + '<span>'+b.emoji+' '+b.name+' <small style="color:#7d8db0">'+b.desc+'</small></span>'
+      + '<span class="pts" style="color:#ffd76a">✦'+b.cost+' → 繁荣+'+b.growth+'</span></div>'
+    ).join('');
+    show('<h3>⚒️ 建设 '+esc(s.planetName)+'</h3>'
+      + '<p class="m-sub">当前星光 <b style="color:#ffd76a">✦ '+s.starlight+'</b> ｜ 繁荣度 <b>'+s.prosperity+'</b> ｜ 选择建筑，或用画布自绘像素建筑</p>'
+      + '<div class="optList">'+opts+'</div>'
+      + '<button class="btn btn-gold" style="width:100%;margin-top:8px" onclick="openDraw(\''+id+'\')">🎨 绘画建造自定义项目</button>');
+  };
+  window.build = function(id, name){
+    const s = find(id);
+    const b = BUILDINGS.find(x => x.name === name);
+    if (s.starlight < b.cost){ alert('星光不足！需要 ✦'+b.cost+'，当前只有 ✦'+s.starlight+'。先帮 '+s.name+' 加分吧～'); return; }
+    s.starlight -= b.cost;
+    if (!Array.isArray(s.built)) s.built = [];
+    s.built.push(name);
+    s.prosperity = Math.min(100, s.prosperity + b.growth);
+    const lvl = getLevel(s.prosperity);
+    s.history.unshift({ t: Date.now(), text: '建设「'+b.name+'」 消耗 ✦'+b.cost+'，繁荣 +'+b.growth, delta: -b.cost });
+    save(); render();
+    show('<h3>🎉 建设成功</h3>'
+      + '<p class="m-sub">'+esc(s.name)+' 的星球建设了「'+b.name+'」，繁荣度 +'+b.growth+'。</p>'
+      + '<p class="m-sub">当前等级：<b style="color:'+lvl.color+'">'+lvl.name+'</b></p>'
+      + '<div class="bigPlanet">'+planetSVG(s)+'</div>'
+      + '<button class="btn btn-primary" onclick="hide()">太棒了，继续</button>');
+  };
+  // ---------- pixel paint builder ----------
+  let paintCols = 16, paintRows = 16, paintColor = '#e53935', paintEraser = false, paintCurId = null;
+  let paintGrid = [];
+  const PAINT_COLORS = ['#ffffff','#1c1c1c','#e53935','#ff7043','#ffb300','#ffee58','#8bc34a','#43a047','#26c6da','#1e88e5','#3949ab','#5e35b1','#d81b60','#795548','#90a4ae','#e0e0e0'];
+
+  function newPaintGrid(c, r){
+    paintCols = c; paintRows = r;
+    paintGrid = [];
+    for (let i=0;i<r;i++){ paintGrid.push(new Array(c).fill('')); }
+    renderPaintGrid();
+  }
+  function renderPaintGrid(){
+    const g = el('paintGrid'); if (!g) return;
+    g.style.gridTemplateColumns = 'repeat('+paintCols+', var(--pc))';
+    let html = '';
+    for (let rr=0;rr<paintRows;rr++){
+      for (let cc=0;cc<paintCols;cc++){
+        html += '<div class="pc" data-r="'+rr+'" data-c="'+cc+'"'+(paintGrid[rr][cc] ? ' style="background:'+paintGrid[rr][cc]+'"' : '')+'></div>';
+      }
+    }
+    g.innerHTML = html;
+  }
+  function paintAt(r, c){
+    if (r<0||c<0||r>=paintRows||c>=paintCols) return;
+    const cell = el('paintGrid').querySelector('[data-r="'+r+'"][data-c="'+c+'"]');
+    if (paintEraser){ paintGrid[r][c] = ''; if (cell) cell.style.background = ''; }
+    else { paintGrid[r][c] = paintColor; if (cell) cell.style.background = paintColor; }
+  }
+  function bindPaint(){
+    const g = el('paintGrid'); if (!g) return;
+    let painting = false;
+    g.addEventListener('pointerdown', ev => { painting = true; const t = ev.target.closest('.pc'); if (t) paintAt(+t.dataset.r, +t.dataset.c); ev.preventDefault(); });
+    g.addEventListener('pointermove', ev => { if (!painting) return; const t = ev.target.closest('.pc'); if (t) paintAt(+t.dataset.r, +t.dataset.c); });
+    g.addEventListener('pointerup', () => { painting = false; });
+    g.addEventListener('pointerleave', () => { painting = false; });
+  }
+  function paintColorsHtml(){
+    let h = '';
+    PAINT_COLORS.forEach(c => { h += '<div class="swatch" data-c="'+c+'" style="background:'+c+'" onclick="pickColor(\''+c+'\', this)"></div>'; });
+    return h;
+  }
+  window.pickColor = function(c, elswat){
+    paintColor = c; paintEraser = false;
+    document.querySelectorAll('.palette .swatch').forEach(x => x.classList.remove('sel'));
+    elswat.classList.add('sel');
+    const b = el('eraserBtn'); if (b){ b.textContent = '🗑 橡皮'; b.className = 'btn btn-ghost'; b.style.flex = 'none'; }
+  };
+  window.toggleEraser = function(){
+    paintEraser = !paintEraser;
+    const b = el('eraserBtn');
+    if (b){ b.textContent = paintEraser ? '✏️ 画笔' : '🗑 橡皮'; b.className = 'btn ' + (paintEraser ? 'btn-danger' : 'btn-ghost'); b.style.flex = 'none'; }
+  };
+  window.sz = function(n){ newPaintGrid(n, n); };
+  window.clearPaint = function(){ for (let rr=0;rr<paintRows;rr++) for (let cc=0;cc<paintCols;cc++) paintGrid[rr][cc] = ''; renderPaintGrid(); };
+
+  window.openDraw = function(id){
+    paintCurId = id;
+    show('<h3>🎨 绘画建造自定义项目</h3>'
+      + '<p class="m-sub">在白色画布上绘制像素图，放上星球后就成为一座建筑（消耗星光、增加繁荣度）</p>'
+      + '<div class="paintWrap paintDraw">'
+      +   '<div>'
+      +     '<div class="paintSizeRow"><span style="font-size:12px;color:#a9b6d0">画布尺寸</span>'
+      +       '<button class="szBtn" onclick="sz(8)">8×8</button><button class="szBtn on" onclick="sz(16)">16×16</button><button class="szBtn" onclick="sz(24)">24×24</button></div>'
+      +     '<div id="paintGrid"></div>'
+      +   '</div>'
+      +   '<div class="paintSide">'
+      +     '<div class="paintToolbar"><button class="btn btn-ghost" style="flex:none" onclick="clearPaint()">🧹 清空画布</button>'
+      +       '<button class="btn btn-ghost" style="flex:none" id="eraserBtn" onclick="toggleEraser()">🗑 橡皮</button></div>'
+      +     '<div class="palette">'+paintColorsHtml()+'</div>'
+      +     '<div class="paintTrade">'
+      +       '<input class="paintInput" id="cb_name" placeholder="建筑名称">'
+      +       '<input class="paintInput" id="cb_cost" type="number" value="20" title="花费星光">'
+      +       '<input class="paintInput" id="cb_growth" type="number" value="10" title="繁荣度加值">'
+      +     '</div>'
+      +     '<p style="font-size:12px;color:#7d8db0;margin-top:2px">名称 ｜ 花费星光 ｜ 繁荣度加值</p>'
+      +     '<button class="btn btn-gold" style="width:100%;margin-top:8px" onclick="saveCustomBuild(\''+id+'\')">✔ 放到星球上</button>'
+      +   '</div>'
+      + '</div>');
+    newPaintGrid(16, 16);
+    const selSw = document.querySelector('.palette .swatch[data-c="'+paintColor+'"]'); if (selSw) selSw.classList.add('sel');
+    bindPaint();
+  };
+  window.saveCustomBuild = function(id){
+    const s = find(id);
+    const name = (el('cb_name').value || '').trim() || ('自定义建筑' + ((s.customs||[]).length + 1));
+    const cost = parseFloat(el('cb_cost').value) || 0;
+    const growth = parseFloat(el('cb_growth').value) || 0;
+    if (s.starlight < cost){ alert('星光不足！需要 ✦'+cost+'，当前只有 ✦'+s.starlight+'。先给 '+s.name+' 加分吧～'); return; }
+    const empty = paintGrid.every(row => row.every(c => !c));
+    if (empty){ alert('画布还是空的，请先画点什么再放到星球上'); return; }
+    s.starlight -= cost;
+    s.prosperity = Math.min(100, s.prosperity + growth);
+    if (!Array.isArray(s.customs)) s.customs = [];
+    const grid = JSON.parse(JSON.stringify(paintGrid));
+    s.customs.push({ id: uid(), name: name, cols: paintCols, rows: paintRows, grid: grid, cost: cost, growth: growth });
+    s.history.unshift({ t: Date.now(), text: '绘画建造「'+name+'」 消耗 ✦'+cost+'，繁荣 +'+growth, delta: -cost });
+    save(); render();
+    const lvl = getLevel(s.prosperity);
+    show('<h3>🎨 建造成功</h3>'
+      + '<p class="m-sub">'+esc(s.name)+' 的星球上长出了你画的「'+name+'」，繁荣度 +'+growth+'。</p>'
+      + '<p class="m-sub">当前等级：<b style="color:'+lvl.color+'">'+lvl.name+'</b></p>'
+      + '<div class="bigPlanet">'+planetSVG(s)+'</div>'
+      + '<button class="btn btn-primary" onclick="hide()">太棒了，继续</button>');
+  };
+  window.openHistory = function(id){
+    const s = find(id);
+    const rows = s.history.slice(0,30).map(h => {
+      const cls = h.delta>0?'plus':(h.delta<0?'minus':'');
+      return '<div class="h-row"><span class="'+cls+'">'+(h.delta>0?'+':'')+h.delta+'</span>  '+esc(h.text)+'</div>';
+    }).join('') || '<div class="h-row">暂无记录</div>';
+    show('<h3>📜 '+esc(s.name)+' 的星球记录</h3>'
+      + '<p class="m-sub">'+esc(s.planetName)+' ｜ '+(s.history.length)+' 条记录</p>'
+      + '<div class="historyList">'+rows+'</div>'
+      + '<button class="btn btn-ghost" onclick="hide()">关闭</button>');
+  };
+  window.openShop = function(id){
+    const s = find(id);
+    let opts = SHOP.map(item =>
+      '<div class="opt" onclick="buyShop(\''+id+'\',\''+item.name+'\')">'
+      + '<span>'+item.emoji+' '+item.name+' <small style="color:#7d8db0">'+item.desc+'</small></span>'
+      + '<span class="pts" style="color:#ffd76a">✦'+item.cost+'</span></div>'
+    ).join('');
+    show('<h3>🏪 星光商店</h3>'
+      + '<p class="m-sub">'+esc(s.name)+' 当前星光 <b style="color:#ffd76a">✦ '+s.starlight+'</b>，花星光兑换班级特权（不增加繁荣度）</p>'
+      + '<div class="optList">'+opts+'</div>');
+  };
+  window.buyShop = function(id, name){
+    const s = find(id);
+    const item = SHOP.find(x => x.name === name);
+    if (s.starlight < item.cost){ alert('星光不足！需要 ✦'+item.cost+'，当前 ✦'+s.starlight+'。先帮 '+s.name+' 加分吧～'); return; }
+    s.starlight -= item.cost;
+    s.history.unshift({ t: Date.now(), text: '星光商店兑换「'+name+'」 消耗 ✦'+item.cost, delta: -item.cost });
+    save(); render(); hide();
+  };
+  window.exportCSV = function(){
+    const rows = [['小组','星球名称','等级','星光能量','繁荣度','记录条数']];
+    db.students.forEach(s => rows.push([s.name, s.planetName, getLevel(s.prosperity).name, s.starlight, s.prosperity, s.history.length]));
+    let csv = rows.map(r => r.map(v => '"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\r\n');
+    const blob = new Blob(['\ufeff'+csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = '成长星球报表_'+Date.now()+'.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+  window.openRank = function(){
+    const sorted = db.students.slice().sort((a,b) => (b.prosperity-a.prosperity) || (b.starlight-a.starlight));
+    const rows = sorted.map((s,i) => {
+      const lvl = getLevel(s.prosperity);
+      return '<div class="opt"><span>🏅 第'+(i+1)+'名 &nbsp; '+esc(s.planetName)+' · '+esc(s.name)+'</span>'
+        + '<span class="pts" style="color:'+lvl.color+'">'+lvl.name+' ｜ ✦'+s.starlight+'</span></div>';
+    }).join('');
+    show('<h3>🏆 繁荣排行榜</h3><p class="m-sub">按星球繁荣度排序（同分比星光）</p><div class="optList">'+rows+'</div>'
+      + '<button class="btn btn-ghost" onclick="hide()">关闭</button>');
+  };
+
+  // ---------- auth ----------
+  const wall = el('authWall');
+  // ---------- permission gate ----------
+  // 游客（学生）：可消费（建造/兑换/查看）；老师登录后：可加/扣分及管理
+  function updateWhoami(){
+    const role = currentRole();
+    const lb = el('loginBtn'); if (lb) lb.style.display = role ? 'none' : '';
+    el('whoami').textContent = role
+      ? ('当前身份：'+role+'（老师）｜ 可加/扣分 & 管理')
+      : '学生模式：可建造、兑换、查看 ｜ 老师登录后即可加/扣分';
+  }
+  function requireTeacher(){
+    if (currentRole()) return true;
+    alert('请先以老师身份登录，才能进行加/扣分等操作');
+    window.showAuthLogin();
+    return false;
+  }
+
+  function renderAuth(view){
+    const acc = loadAccounts();
+    let html = '';
+    if (view === 'manage'){
+      const users = (acc && acc.users) || [];
+      const listHtml = users.map(u =>
+        '<div class="accRow"><span>👤 '+esc(u.role)+'</span>'
+        + '<button class="btn btn-danger" onclick="deleteAccount(\''+esc(u.role)+'\')">删除</button></div>'
+      ).join('') || '<p class="hint">暂无账号</p>';
+      html = '<div class="auth-card">'
+        + '<h2>👥 账号管理</h2>'
+        + '<p class="m-sub">已注册账号（共 '+users.length+' 个，可继续添加）</p>'
+        + '<div class="accList">'+listHtml+'</div>'
+        + '<div class="customRow"><input id="nm_role" placeholder="身份（如：语文老师）"></div>'
+        + '<div class="customRow"><input id="nm_pass" type="password" placeholder="登录密码"></div>'
+        + '<div class="customRow"><input id="nm_pass2" type="password" placeholder="确认密码"></div>'
+        + '<button class="btn btn-primary" onclick="addAccount()">＋ 添加账号</button>'
+        + '<button class="btn btn-ghost" onclick="logout()">🚪 退出登录</button>'
+        + '<button class="btn btn-ghost" onclick="closeAuth()">✔ 返回管理界面</button>'
+        + '</div>';
+    } else if (view === 'first'){
+      html = '<div class="auth-card">'
+        + '<div class="logo">🌍</div>'
+        + '<h2>我的成长星球</h2>'
+        + '<p class="m-sub">首次使用，请创建管理员账号</p>'
+        + '<input id="ar_role" placeholder="身份（如：语文老师）">'
+        + '<input id="ar_pass" type="password" placeholder="登录密码">'
+        + '<input id="ar_pass2" type="password" placeholder="确认密码">'
+        + '<button class="btn btn-primary" onclick="firstRegister()">注册并进入</button>'
+        + '</div>';
+    } else {
+      html = '<div class="auth-card">'
+        + '<div class="logo">🌍</div>'
+        + '<h2>我的成长星球</h2>'
+        + '<p class="m-sub">请输入登录信息</p>'
+        + '<input id="lg_role" placeholder="身份">'
+        + '<input id="lg_pass" type="password" placeholder="登录密码">'
+        + '<button class="btn btn-primary" onclick="doLogin()">登 录</button>'
+        + '<p class="hint">更多账号请在登录后于「账号管理」中添加</p>'
+        + '</div>';
+    }
+    wall.innerHTML = html;
+    wall.classList.add('show');
+  }
+  function closeAuth(){ wall.classList.remove('show'); }
+  window.closeAuth = closeAuth;
+
+  window.showAuthLogin = function(){
+    const acc = loadAccounts();
+    renderAuth((!acc || acc.users.length === 0) ? 'first' : 'login');
+  };
+  window.doLogin = function(){
+    const role = el('lg_role').value.trim();
+    const pass = el('lg_pass').value;
+    if (!role){ alert('请输入身份'); return; }
+    const acc = loadAccounts();
+    const u = (acc && acc.users) ? acc.users.find(x => x.role === role) : null;
+    if (!u || u.passHash !== hashPw(pass)){
+      alert('身份或密码不正确，无法进行后续操作');
+      return;
+    }
+    setSession(role);
+    updateWhoami();
+    closeAuth(); render();
+  };
+  window.firstRegister = function(){
+    const role = el('ar_role').value.trim();
+    const p1 = el('ar_pass').value, p2 = el('ar_pass2').value;
+    if (!role){ alert('请输入身份'); return; }
+    if (!p1 || p1.length < 3){ alert('密码至少 3 位'); return; }
+    if (p1 !== p2){ alert('两次密码不一致'); return; }
+    let acc = loadAccounts() || { users: [] };
+    if (acc.users.some(x => x.role === role)){ alert('该身份已存在'); return; }
+    acc.users.push({ role: role, passHash: hashPw(p1), createdAt: Date.now() });
+    saveAccounts(acc);
+    setSession(role);
+    updateWhoami();
+    closeAuth(); render();
+  };
+  window.addAccount = function(){
+    const role = el('nm_role').value.trim();
+    const p1 = el('nm_pass').value, p2 = el('nm_pass2').value;
+    if (!role){ alert('请输入身份'); return; }
+    if (!p1 || p1.length < 3){ alert('密码至少 3 位'); return; }
+    if (p1 !== p2){ alert('两次密码不一致'); return; }
+    let acc = loadAccounts() || { users: [] };
+    if (acc.users.some(x => x.role === role)){ alert('该身份已存在'); return; }
+    acc.users.push({ role: role, passHash: hashPw(p1), createdAt: Date.now() });
+    saveAccounts(acc);
+    renderAuth('manage');
+  };
+  window.deleteAccount = function(role){
+    let acc = loadAccounts();
+    if (!acc || acc.users.length <= 1){ alert('至少需要保留 1 个账号'); return; }
+    if (role === currentRole()){ alert('不能删除当前登录的账号'); return; }
+    if (!confirm('确定删除账号「'+role+'」吗？')) return;
+    acc.users = acc.users.filter(x => x.role !== role);
+    saveAccounts(acc);
+    renderAuth('manage');
+  };
+  window.logout = function(){
+    clearSession();
+    updateWhoami();
+    closeAuth();
+    render();
+  };
+  window.openAccountManage = function(){
+    if (!requireTeacher()) return;
+    renderAuth('manage');
+  };
+
+  // ---------- controls ----------
+  el('addBtn').onclick = function(){
+    if (!requireTeacher()) return;
+    const name = el('nameInput').value.trim();
+    if (!name){ alert('请输入小组名称'); return; }
+    db.students.push({ id: uid(), name: name, planetName: randPlanetName()+'星', starlight: 0, prosperity: 0, createdAt: Date.now(), built: [], customs: [], history: [{t:Date.now(), text:'开学领养星球', delta:0}] });
+    el('nameInput').value = '';
+    save(); render();
+  };
+  el('nameInput').addEventListener('keyup', e => { if (e.key === 'Enter') el('addBtn').click(); });
+  el('rankBtn').onclick = openRank;
+  el('exportBtn').onclick = window.exportCSV;
+  el('loginBtn').onclick = window.showAuthLogin;
+  el('acctBtn').onclick = window.openAccountManage;
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') hide(); });
+  el('resetBtn').onclick = function(){
+    if (!requireTeacher()) return;
+    if (confirm('确定清空所有星球数据吗？（不影响已注册账号）此操作不可恢复。')){ localStorage.removeItem(STORE_KEY); seed(); render(); }
+  };
+
+  // ---------- daily history auto-clean (every day at 6:00 AM) ----------
+  function autoCleanHistory(){
+    if (!db) return;
+    const now = Date.now();
+    const d = new Date();
+    d.setHours(6, 0, 0, 0);
+    const today6 = d.getTime();
+    if (typeof db.lastCleanAt !== 'number'){ db.lastCleanAt = today6; save(); return; }
+    if (now >= today6 && db.lastCleanAt < today6){
+      db.students.forEach(s => { s.history = []; });
+      db.lastCleanAt = today6;
+      save();
+    }
+  }
+
+  // ---------- boot ----------
+  function boot(){
+    // 默认开放给游客（学生）：可建造、兑换、查看；老师登录后才可加/扣分
+    autoCleanHistory();
+    updateWhoami();
+    render();
+  }
+  boot();
+})();
+</script>
+</body>
+</html>
